@@ -132,6 +132,13 @@ const startSock = async() => {
 				console.log(events['message-receipt.update'])
 			}
 
+			if(events['contacts.label']) {
+				console.log(events['contacts.label'])
+			}
+			if(events['labels.update']) {
+				console.log(events['labels.update'])
+			}
+
 			if(events['messages.reaction']) {
 				console.log(events['messages.reaction'])
 			}

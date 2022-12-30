@@ -3,10 +3,11 @@ import { proto } from '../../WAProto'
 import { AuthenticationCreds } from './Auth'
 import { WACallEvent } from './Call'
 import { Chat, ChatUpdate, PresenceData } from './Chat'
-import { Contact } from './Contact'
+import {Contact} from './Contact'
 import { GroupMetadata, ParticipantAction } from './GroupMetadata'
 import { MessageUpsertType, MessageUserReceiptUpdate, WAMessage, WAMessageKey, WAMessageUpdate } from './Message'
 import { ConnectionState } from './State'
+import {WALabelAssignEvent, WALabelUpdateEvent} from "./Label";
 
 export type BaileysEventMap = {
     /** connection state has been updated -- WS closed, opened, connecting etc. */
@@ -30,6 +31,7 @@ export type BaileysEventMap = {
     'presence.update': { id: string, presences: { [participant: string]: PresenceData } }
 
     'contacts.upsert': Contact[]
+    'contacts.label': WALabelAssignEvent[]
     'contacts.update': Partial<Contact>[]
 
     'messages.delete': { keys: WAMessageKey[] } | { jid: string, all: true }
@@ -54,6 +56,8 @@ export type BaileysEventMap = {
     'blocklist.update': { blocklist: string[], type: 'add' | 'remove' }
     /** Receive an update on a call, including when the call was received, rejected, accepted */
     'call': WACallEvent[]
+    'labels.update': WALabelUpdateEvent[]
+
 }
 
 export type BufferedEventData = {
