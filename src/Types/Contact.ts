@@ -16,5 +16,5 @@ export interface Contact {
      */
     imgUrl?: string | null | 'changed'
     status?: string
-    labels?: number
+    labels?: number[]
 }

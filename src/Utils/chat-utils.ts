@@ -622,10 +622,10 @@ export const chatModificationToAppPatch = (
 		patch = {
 			syncAction: {
 				labelAssociationAction: {
-					labeled: mod.action==="add"
+					labeled: mod.action === 'add'
 				}
 			},
-			index: ["label_jid",`${mod.labelIndex}`,jid],
+			index: ['label_jid', `${mod.labelIndex}`, jid],
 			type: 'regular',
 			apiVersion: 3,
 			operation: OP.SET,
@@ -719,20 +719,20 @@ export const processSyncAction = (
 			}
 		] })
 	} else if(action?.contactAction) {
-		ev.emit('contacts.upsert', [{id, name: action.contactAction!.fullName!}])
-	} else if (action?.labelAssociationAction) {
+		ev.emit('contacts.upsert', [{ id, name: action.contactAction!.fullName! }])
+	} else if(action?.labelAssociationAction) {
 		ev.emit('contacts.label', [{
 			id: msgId,
 			labelIndex: +id,
-			action: action.labelAssociationAction.labeled ? "add":"remove" as "add"|"remove"
-		}]);
-	} else if (action?.labelEditAction) {
+			action: action.labelAssociationAction.labeled ? 'add' : 'remove' as 'add'|'remove'
+		}])
+	} else if(action?.labelEditAction) {
 		ev.emit('labels.update', [{
-			name: action.labelEditAction.name ?? "",
+			name: action.labelEditAction.name ?? '',
 			deleted: !!action.labelEditAction.deleted,
 			color: action.labelEditAction.color,
 			labelIndex: +id
-		}]);
+		}])
 	} else if(action?.pushNameSetting) {
 		const name = action?.pushNameSetting?.name
 		if(name && me?.name !== name) {

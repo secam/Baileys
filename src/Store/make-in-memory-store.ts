@@ -4,7 +4,7 @@ import type { Logger } from 'pino'
 import { proto } from '../../WAProto'
 import { DEFAULT_CONNECTION_CONFIG } from '../Defaults'
 import type makeMDSocket from '../Socket'
-import type { BaileysEventEmitter, Chat, ConnectionState, Contact, GroupMetadata, PresenceData, WAMessage, WAMessageCursor, WAMessageKey } from '../Types'
+import type { BaileysEventEmitter, Chat, ConnectionState, Contact, GroupMetadata, Label, PresenceData, WAMessage, WAMessageCursor, WAMessageKey } from '../Types'
 import { toNumber, updateMessageWithReaction, updateMessageWithReceipt } from '../Utils'
 import { jidNormalizedUser } from '../WABinary'
 import makeOrderedDictionary from './make-ordered-dictionary'
@@ -35,6 +35,7 @@ export default (
 	const chats = new KeyedDB(chatKey, c => c.id)
 	const messages: { [_: string]: ReturnType<typeof makeMessagesDictionary> } = { }
 	const contacts: { [_: string]: Contact } = { }
+	const labels: { [_: number]: Label } = { }
 	const groupMetadata: { [_: string]: GroupMetadata } = { }
 	const presences: { [id: string]: { [participant: string]: PresenceData } } = { }
 	const state: ConnectionState = { connection: 'close' }
@@ -58,6 +59,19 @@ export default (
 		}
 
 		return oldContacts
+	}
+
+	const labelsUpsert = (newLabels: Label[]) => {
+		const oldLabels = new Set(Object.keys(labels))
+		for(const label of newLabels) {
+			oldLabels.delete(label.labelIndex.toString())
+			labels[label.labelIndex] = Object.assign(
+				labels[label.labelIndex] || {},
+				label
+			)
+		}
+
+		return oldLabels
 	}
 
 	/**
@@ -113,6 +127,35 @@ export default (
 				}
 			}
 		})
+
+		ev.on('labels.update', updates => {
+			for(const update of updates) {
+				labels[update.labelIndex!.toString()] = update
+			}
+		})
+
+		ev.on('contacts.label', updates => {
+			for(const update of updates) {
+				let contact = contacts[update.id!]
+				if(!contact) {
+					contact = {
+						id: update.id,
+						labels: []
+					}
+					contacts[update.id!] = contact
+				}
+
+				contact.labels = contact.labels ?? []
+				if(update.action === 'add' && !contact.labels.includes(update.labelIndex)) {
+					contact.labels.push(update.labelIndex)
+				}
+
+				if(update.action === 'remove' && contact.labels.includes(update.labelIndex)) {
+					contact.labels = contact.labels.filter(li => li !== update.labelIndex)
+				}
+			}
+		})
+
 		ev.on('chats.upsert', newChats => {
 			chats.upsert(...newChats)
 		})
@@ -246,10 +289,11 @@ export default (
 	const toJSON = () => ({
 		chats,
 		contacts,
-		messages
+		messages,
+		labels
 	})
 
-	const fromJSON = (json: { chats: Chat[], contacts: { [id: string]: Contact }, messages: { [id: string]: WAMessage[] } }) => {
+	const fromJSON = (json: { chats: Chat[], contacts: { [id: string]: Contact }, messages: { [id: string]: WAMessage[]}, labels: { [id: number]: Label} }) => {
 		chats.upsert(...json.chats)
 		contactsUpsert(Object.values(json.contacts))
 		for(const jid in json.messages) {
@@ -258,6 +302,8 @@ export default (
 				list.upsert(proto.WebMessageInfo.fromObject(msg), 'append')
 			}
 		}
+
+		labelsUpsert(Object.values(json.labels))
 	}
 
 
@@ -269,6 +315,7 @@ export default (
 		state,
 		presences,
 		bind,
+		labels,
 		/** loads messages from the store, if not found -- uses the legacy connection */
 		loadMessages: async(jid: string, count: number, cursor: WAMessageCursor) => {
 			const list = assertMessageList(jid)

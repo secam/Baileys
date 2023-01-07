@@ -184,6 +184,24 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		await chatModify({ pushNameSetting: name }, '')
 	}
 
+	const setLabels = async(jid: string, labelIndexes: number[], currentIndexes: number[] = []) => {
+		const modifies:Promise<void>[] = []
+		const indexSet = new Set<number>(currentIndexes)
+		for(const index of labelIndexes) {
+			if(indexSet.has(index)) {
+				indexSet.delete(index)
+			} else {
+				modifies.push(chatModify({ label: true, labelIndex: index, action: 'add' }, jid))
+			}
+		}
+
+		for(const deleteIndex of indexSet) {
+			modifies.push(chatModify({ label: true, labelIndex: deleteIndex, action: 'remove' }, jid))
+		}
+
+		await Promise.all(modifies)
+	}
+
 	const fetchBlocklist = async() => {
 		const result = await query({
 			tag: 'iq',
@@ -859,6 +877,7 @@ export const makeChatsSocket = (config: SocketConfig) => {
 		updateBlockStatus,
 		getBusinessProfile,
 		resyncAppState,
-		chatModify
+		chatModify,
+		setLabels
 	}
 }

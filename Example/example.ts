@@ -1,5 +1,15 @@
 import { Boom } from '@hapi/boom'
-import makeWASocket, { AnyMessageContent, delay, DisconnectReason, fetchLatestBaileysVersion, isJidBroadcast, makeCacheableSignalKeyStore, makeInMemoryStore, MessageRetryMap, useMultiFileAuthState } from '../src'
+import makeWASocket, {
+	AnyMessageContent,
+	delay,
+	DisconnectReason,
+	fetchLatestBaileysVersion,
+	isJidBroadcast,
+	makeCacheableSignalKeyStore,
+	makeInMemoryStore,
+	MessageRetryMap,
+	useMultiFileAuthState
+} from '../src'
 import MAIN_LOGGER from '../src/Utils/logger'
 
 const logger = MAIN_LOGGER.child({ })
@@ -70,6 +80,16 @@ const startSock = async() => {
 		await sock.sendMessage(jid, msg)
 	}
 
+	const getLabels = async() => {
+		await delay(2000)
+		if(store) {
+			logger.info(store.labels)
+			logger.info(store.contacts)
+		}
+
+		//await sock.setLabels('jid', [new indexes], [old indexes *from store.contacts])
+	}
+
 	// the process function lets you process all events that just occurred
 	// efficiently in a batch
 	sock.ev.process(
@@ -135,6 +155,7 @@ const startSock = async() => {
 			if(events['contacts.label']) {
 				console.log(events['contacts.label'])
 			}
+
 			if(events['labels.update']) {
 				console.log(events['labels.update'])
 			}
@@ -169,7 +190,7 @@ const startSock = async() => {
 			}
 		}
 	)
-
+	await getLabels()
 	return sock
 }
 
